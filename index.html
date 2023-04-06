@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Scav Case</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ 
+    <!-- Bootstrap core CSS -->
+    <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.2/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="https://bootswatch.com/3/darkly/bootstrap.css" rel="stylesheet" media="screen">
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="http://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.2/html5shiv.js"></script>
+      <script src="http://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.js"></script>
+    <![endif]-->
+
+  <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.1.0/css/responsive.bootstrap.min.css" type="text/css" />
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.10.12/css/dataTables.bootstrap.min.css" type="text/css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+
+  <style>
+    .btns { text-align:center;}
+    .block-btn { margin:10px; position:relative; width:150px; height:150px; display:inline-block; background:#111; border:1px solid #555; text-align:center; font-size:40px;}
+    .block-btn:hover i { opacity: 1;}
+    .block-btn i { position:absolute; right:10px; bottom:10px;display:inline-block;color:#fff; opacity: .5;}
+    .block-btn span {position:absolute; left:10px; top:10px;display:inline-block;color:#fff;font-weight:bold;}
+    .block-btn.intel-add { background:#111 url(img/intel.png) no-repeat center center;}
+    .block-btn.moonshine-add { background:#111 url(img/moonshine.png) no-repeat center center;}
+    .block-btn.ruble-add { background:#111 url(img/ruble.webp) no-repeat center center; background-size:contain;}
+    .modal-dialog { z-index:2000;}
+
+    .search_items input { background:#111; color:#ccc; padding:10px; width:100%; outline:0 !important;}
+
+    .loading { padding:20px; display:none;}
+
+    .search_results { padding:5px; max-height:300px; overflow:auto;}
+    .case_items { padding:5px;}
+    .search_item { cursor:pointer; background:#161717; margin-bottom:5px;}
+    .search_item  .icon_img { border:1px solid #555; float:left;}
+    .search_item  .info { margin-left:80px;}
+    .search_item  strong { color:#d14117;}
+    .search_item  .info h3 { margin-top:0;font-size:18px;padding-top:5px; font-weight:bold;}
+  </style>
+  </head>
+  <body>
+    <div class="container">
+
+      <h1 class="text-center" style="margin-top:50px;">EFT SCAV CASE TRACKER</h1>
+
+<div class="btns">
+  <a href="#" class="block-btn intel-add"><i class="fas fa-plus-circle"></i></a>
+  <a href="#" class="block-btn moonshine-add"><i class="fas fa-plus-circle"></i></a>
+  <a href="#" class="block-btn ruble-add"><span>95K &#8381;</span><i class="fas fa-plus-circle"></i></a>
+</div>
+
+
+<div class="well">
+
+<div class="case-stats"></div>
+</div>
+
+</div><!-- /.container -->
+ 
+<div class="modal fade" id="basic_modal" role="dialog">
+    <div class="modal-dialog modal-lg">
+
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <!-- modal header  -->
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">...</h4>
+        </div>
+        <div class="modal-body">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+ <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+ <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+ <!-- Include all compiled plugins (below), or include individual files as needed -->
+ <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.2/js/bootstrap.min.js"></script>
+
+ <script src="//cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js"></script>
+  <script src="//cdn.datatables.net/1.10.12/js/dataTables.bootstrap.min.js"></script>
+  <!-- Responsive extension -->
+  <script src="https://cdn.datatables.net/responsive/2.1.0/js/responsive.bootstrap.min.js"></script>
+  <style>
+    .highlight-row { background-color:#8f2d10 !important;}
+    .prices tr { cursor:pointer;}
+    .search_results .qty-field { display:none; }
+    .qty-field input { width:76px;padding:10px;font-size:24px;text-align:center }
+  </style>
+<script type="text/javascript">
+
+const formatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'RUB',
+
+  // These options are needed to round to whole numbers if that's what you want.
+  //minimumFractionDigits: 0, // (this suffices for whole numbers, but will print 2500.10 as $2,500.1)
+  //maximumFractionDigits: 0, // (causes 2500.99 to be printed as $2,501)
+});
+
+
+function itemTitleToClipboard(){
+  var copyText = document.querySelector("#itemNameField");
+  copyText.select();
+  document.execCommand("copy");
+}
+
+
+
+$(document).ready(function() {
+
+    var stats_refresh = function(){
+      $('.case-stats').html('<div class="text-center"><div class="loading"></div></div>');
+      $.post('static-data.html?nc='+Math.random(), function(d){
+        $('.case-stats').html(d);
+        var dt = $('.prices').DataTable({paging: false});
+        dt.order([5,'desc'], [3,'desc']).draw();
+      });
+      
+    }
+    stats_refresh();
+
+    var case_total = function(){
+      var total = 0;
+      $('.case_items .search_item').each(function(i,v){
+        total =  total+($(this).data('price') * parseInt($(this).data('qty')));
+      });
+      $('.case_total').html('<h3>'+formatter.format(total)+'</h3>');
+    }
+
+    $('.ruble-add').click(function(e){
+      e.preventDefault();
+      $.get('modal-template.php', function(d){
+        $('#basic_modal').find('.modal-dialog').html(d);
+        $('#basic_modal').find('.modal-title').html('95K Scav Case');
+        $('.case_type').val('ruble');
+        $('#basic_modal').modal('show');
+
+      });
+
+    });
+
+    $('.intel-add').click(function(e){
+      e.preventDefault();
+      $.get('modal-template.php', function(d){
+        $('#basic_modal').find('.modal-dialog').html(d);
+        $('#basic_modal').find('.modal-title').html('Intelligence Scav Case');
+        $('.case_type').val('intel');
+        $('#basic_modal').modal('show');
+
+      });
+
+    });
+    $('.moonshine-add').click(function(e){
+      e.preventDefault();
+      $.get('modal-template.php', function(d){
+        $('#basic_modal').find('.modal-dialog').html(d);
+        $('#basic_modal').find('.modal-title').html('Moonshine Scav Case');
+        $('.case_type').val('moonshine');
+        $('#basic_modal').modal('show');
+      });
+    });
+
+    $(document).on('click', '.add-case', function(e){
+      var items = [];
+      $('.case_items .search_item').each(function(i,v){
+        items.push($(this).data());
+      });
+      if(items.length <= 0){
+        alert('Error no items in case');
+        return;
+      }
+      $(this).prop('disabled','disabled');
+      $.post('save-case.php',{ items: items, case_type: $('.case_type').val()}, function(d){
+        $('.add-case').removeProp('disabled');
+        $('#basic_modal').modal('hide');
+        stats_refresh();
+      });
+    })
+    $(document).on('click', '.qty-field', function(e){
+      e.stopPropagation();
+    });
+    $(document).on('change', '.qty-val', function(e){
+      e.stopPropagation();
+      $(this).closest('.search_item').data('qty', $(this).val());
+      case_total();
+    });
+    $(document).on('click', '.case_items .search_item', function(e){
+      e.preventDefault();
+      $(this).remove();
+      case_total();
+    });
+    $(document).on('click', '.search_results .search_item', function(e){
+      e.preventDefault();
+      $(this).clone().appendTo('.case_items');
+      case_total();
+    });
+    $(document).on('submit', '.search_items',function(e){
+      e.preventDefault();
+      $('.search_results').html('');
+      $('.loading').show();
+      search_items($('.search_string').val());
+      $('.search_string').val('');
+    });
+    $(document).on('click', '.show-table', function(e){
+      e.preventDefault();
+      $(this).closest('.row').hide();
+      $('#'+$(this).data('id')).show();
+    });
+} );
+ </script>
+</body>
+</html>
